@@ -1,0 +1,58 @@
+---
+apiVersion: policy.open-cluster-management.io/v1
+kind: Policy
+metadata:
+  name: policy-resourcequota-{{ .Values.environment.name }}
+  annotations:
+    policy.open-cluster-management.io/standards: NIST SP 800-53
+    policy.open-cluster-management.io/categories: SC System and Communications Protection
+    policy.open-cluster-management.io/controls: SC-6 Resource Availability
+spec:
+  remediationAction: inform
+  disabled: false
+  policy-templates:
+    - objectDefinition:
+        apiVersion: policy.open-cluster-management.io/v1
+        kind: ConfigurationPolicy
+        metadata:
+          name: policy-resourcequota-{{ .Values.environment.name }}
+        spec:
+          remediationAction: inform
+          severity: medium
+          namespaceSelector:
+            include:
+              {{- toYaml .Values.environment.namespaces | nindent 14 }}
+          object-templates:
+            - complianceType: musthave
+              objectDefinition:
+                apiVersion: v1
+                kind: ResourceQuota
+                metadata:
+                  name: resource-quota
+                spec:
+                  {{- toYaml .Values.environment.resources | nindent 18 }}
+---
+apiVersion: policy.open-cluster-management.io/v1
+kind: PlacementBinding
+metadata:
+  name: binding-policy-resourcequota-{{ .Values.environment.name }}
+placementRef:
+  name: placement-policy-resourcequota-{{ .Values.environment.name }}
+  kind: PlacementRule
+  apiGroup: apps.open-cluster-management.io
+subjects:
+- name: policy-resourcequota-{{ .Values.environment.name }}
+  kind: Policy
+  apiGroup: policy.open-cluster-management.io
+---
+apiVersion: apps.open-cluster-management.io/v1
+kind: PlacementRule
+metadata:
+  name: placement-policy-resourcequota-{{ .Values.environment.name }}
+spec:
+  clusterConditions:
+  - status: "True"
+    type: ManagedClusterConditionAvailable
+  clusterSelector:
+    matchExpressions:
+      - {key: environment, operator: In, values: ["{{ .Values.environment.name }}"]}
