@@ -1,29 +1,30 @@
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: webserver
+  name: policies
   namespace: openshift-gitops
 spec:
   generators:
   - git:
-      repoURL: https://github.com/michaelkotelnikov/rhacm-workshop.git
+      repoURL: https://github.com/michaelkotelnikov/helm-rhacm-policies.git
       revision: master
       directories:
-      - path: 04.Application-Lifecycle/exercise-argocd/application-resources/values/*
+      - path: policies/values/*
   template:
     metadata:
-      name: '{{path.basename}}'
+      name: 'policy-{{path.basename}}'
     spec:
-      project: demo-project-argocd
+      project: policies
       source:
-        repoURL: https://github.com/michaelkotelnikov/rhacm-workshop.git
+        repoURL: https://github.com/michaelkotelnikov/helm-rhacm-policies.git
         targetRevision: master
-        path: 04.Application-Lifecycle/exercise-argocd/application-resources/
+        path: policies/
         helm:
           valueFiles:
           - 'values/{{path.basename}}/values.yaml'
       destination:
         name: 'local-cluster'
+        namespace: rhacm-policies
       syncPolicy:
         automated:
           prune: false
